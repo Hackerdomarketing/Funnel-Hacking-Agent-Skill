@@ -1026,24 +1026,34 @@ Antes de marcar qualquer objetivo como completo:
 
 Cada player usa uma arquitetura diferente para servir o video:
 
-**ConverteAI / Vturb (formato antigo):**
-- Player carregado via `scripts.converteai.net/{org_id}/players/{player_id}/player.js`
-- No JS do player: extrair `org_id` e `video_id`
-- URL do stream: `https://cdn.converteai.net/{org_id}/{video_id}/main.m3u8`
+**ConverteAI / Vturb (formato antigo — div id="vid_XXX"):**
+- HTML contem: `<div id="vid_XXX">` + script `scripts.converteai.net/{org_id}/players/{player_id}/player.js`
+- A URL do m3u8 NAO esta no HTML — esta dentro do player.js
+- Metodo: curl na pagina → grep `scripts.converteai.net` → extrai `org_id` + `player_id` → fetch do `player.js` → extrai `video_id` → constroi CDN: `https://cdn.converteai.net/{org_id}/{video_id}/main.m3u8`
+- NUNCA buscar `<link rel="preload">` no HTML — nao existe no Vturb atual
 
 **Vturb (novo web component `<vturb-smartplayer>`):**
+- Tag: `<vturb-smartplayer id="vid-HASH">`
 - Formato mais novo, requer execucao de JavaScript para resolver URL
-- yt-dlp pode nao detectar; usar DevTools para capturar m3u8
+- yt-dlp pode nao detectar; usar DevTools (Network → filtrar m3u8) para capturar URL
 
 **Voomly:**
-- embedId visivel no HTML: `data-id="Ox-KjxbfB8M..."` (formato longo nao-GUID)
-- API publica: `GET https://api.voomly.com/embed-videos/{embedId}`
-- Retorna JSON com campo `video.url` = URL do m3u8 em alta qualidade
-- CDN: `media.voomly.com/{org_id}/{video_id}/v2/hls/file.m3u8`
-- Qualidades disponiveis: file240p, file360p, file540p, file720p, file1080p
+- HTML contem: `data-id="Ox-KjxbfB8M..."` (embedId — formato longo, nao e UUID padrao)
+- API publica nao documentada: `GET https://api.voomly.com/embed-videos/{embedId}` (sem auth)
+- Retorna JSON com: `video.url` (m3u8 maxima qualidade) + `video.qualityOptions[].hlsUrl` (qualidades especificas)
+- CDN: `media.voomly.com/{org_id}/{video_id}/v2/hls/file{quality}.m3u8`
+- Qualidades: file240p, file360p, file540p, file720p, file1080p
+- NUNCA usar `/api/videos/{embedId}` — esse endpoint exige GUID real, retorna 400
 
-**Regra geral — HLS (HTTP Live Streaming):**
-O video e dividido em segmentos `.ts` apontados por um arquivo `.m3u8`. O player JavaScript monta esses segmentos no browser. O download captura esses segmentos e remonta em MP4.
+**Regra universal — qualquer player HLS customizado:**
+Todo player HLS PRECISA que o browser saiba a URL do m3u8 (para preload dos segmentos). Essa URL SEMPRE esta acessivel em algum lugar — no JS do player, em uma API REST chamada pelo player, ou via DevTools. Nao existe player HLS que esconda completamente a URL sem DRM.
+
+Metodo universal de engenharia reversa:
+1. Identificar qual JS e o player (grep scripts externos no HTML)
+2. Fetch no JS do player → buscar: `org_id`, `video_id`, `hlsUrl`, `m3u8`, `cdn.`
+3. Testar endpoints REST: `/embed-videos/{id}`, `/videos/{id}/embed`, `/v/{embedId}`
+4. Se bloqueado: reconstruir URL a partir de templates literais `${org_id}/${video_id}` no JS
+5. Confirmar com `curl -I` (HTTP 200) → ffmpeg download
 
 ### Metodo 1: Script automatico (mais rapido)
 
