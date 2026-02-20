@@ -1024,7 +1024,26 @@ Antes de marcar qualquer objetivo como completo:
 
 ### Como funciona tecnicamente
 
-Vturb e ConvertAI servem videos via **HLS (HTTP Live Streaming)** — o video e dividido em segmentos `.ts` apontados por um arquivo `.m3u8`. O player JavaScript monta esses segmentos no browser. O download captura esses segmentos e remonta em MP4.
+Cada player usa uma arquitetura diferente para servir o video:
+
+**ConverteAI / Vturb (formato antigo):**
+- Player carregado via `scripts.converteai.net/{org_id}/players/{player_id}/player.js`
+- No JS do player: extrair `org_id` e `video_id`
+- URL do stream: `https://cdn.converteai.net/{org_id}/{video_id}/main.m3u8`
+
+**Vturb (novo web component `<vturb-smartplayer>`):**
+- Formato mais novo, requer execucao de JavaScript para resolver URL
+- yt-dlp pode nao detectar; usar DevTools para capturar m3u8
+
+**Voomly:**
+- embedId visivel no HTML: `data-id="Ox-KjxbfB8M..."` (formato longo nao-GUID)
+- API publica: `GET https://api.voomly.com/embed-videos/{embedId}`
+- Retorna JSON com campo `video.url` = URL do m3u8 em alta qualidade
+- CDN: `media.voomly.com/{org_id}/{video_id}/v2/hls/file.m3u8`
+- Qualidades disponiveis: file240p, file360p, file540p, file720p, file1080p
+
+**Regra geral — HLS (HTTP Live Streaming):**
+O video e dividido em segmentos `.ts` apontados por um arquivo `.m3u8`. O player JavaScript monta esses segmentos no browser. O download captura esses segmentos e remonta em MP4.
 
 ### Metodo 1: Script automatico (mais rapido)
 
@@ -1097,6 +1116,7 @@ ffmpeg -version
 | Bunny.net CDN | Funciona (Metodo 1) |
 | Wistia, Vimeo | Funciona (Metodo 1) |
 | YouTube | Funciona (Metodo 1) |
+| **Voomly** | **Funciona — API publica `/embed-videos/{embedId}` retorna m3u8** |
 | Vturb com token de acesso | Funciona (Metodo 3 — cookies) |
 | Conteudo com DRM (Widevine) | Nao automatizavel — requer captura de tela |
 
