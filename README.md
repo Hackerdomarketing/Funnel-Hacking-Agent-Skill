@@ -49,7 +49,7 @@ Use quando precisar:
 
 **Palavras-chave para ativar:** funnel hacking, concorrentes, ofertas escaladas, inteligencia de mercado, espionagem etica, benchmarking, funil, dossie, swipefile, escala
 
-## Os 4 Objetivos
+## Os 5 Objetivos
 
 | # | Objetivo | Input | Output |
 |---|----------|-------|--------|
@@ -57,6 +57,7 @@ Use quando precisar:
 | 2 | Encontrar Ofertas Escaladas | Nicho + keywords | Ofertas validadas com score de escala + estrutura |
 | 3 | Concorrentes Escalados | Lista de concorrentes | Ranking de escala + dossie profundo dos top 5-10 |
 | 4 | Mapear Funil Completo | URL de um concorrente | Mapa de todas as paginas, fluxo completo |
+| 5 | Capturar VSL Bloqueada | URL da pagina ou m3u8 | Arquivo MP4 local da VSL do concorrente |
 
 ## Como Usar
 
@@ -176,7 +177,9 @@ funnel-hacking/
         estruturas-oferta.md  ← Precos, bonus, garantias
 ```
 
-## Script Google Dorking
+## Scripts Incluidos
+
+### Script 1: Google Dorking
 
 Gera todas as queries de busca avancada para um dominio:
 
@@ -189,6 +192,32 @@ Gera todas as queries de busca avancada para um dominio:
 ```
 
 Gera queries para: paginas indexadas, paginas de funil (21 inurl:), subdominios, URLs diretas (robots.txt, sitemap), ferramentas de espionagem, evidencia de ads, trafego, WHOIS, e padroes de URL por plataforma.
+
+### Script 2: Download de VSL Bloqueada (Objetivo 5)
+
+Captura videos VSL protegidos por Vturb, ConvertAI, Bunny.net, Wistia e outros players HLS:
+
+```bash
+# Detecta e baixa automaticamente (5 metodos em cascata)
+./scripts/download-vsl.sh https://concorrente.com.br/vsl
+
+# Com nome customizado para o arquivo
+./scripts/download-vsl.sh https://concorrente.com.br/vsl nome-do-arquivo
+
+# Se ja tiver a URL m3u8 (capturada manualmente via DevTools)
+./scripts/download-vsl.sh "https://cdn.vturb.com.br/.../index.m3u8" vsl-concorrente
+```
+
+**Dependencias:** `brew install yt-dlp ffmpeg` (macOS)
+
+**5 metodos em cascata:**
+1. `yt-dlp` automatico — detecta Vturb, ConvertAI, Bunny.net, Wistia, Vimeo, HLS
+2. `yt-dlp` com User-Agent de browser (bypass de deteccao de bot)
+3. `yt-dlp` com cookies do Chrome (para conteudo autenticado)
+4. `ffmpeg` direta em URL m3u8 (se URL m3u8 capturada manualmente)
+5. Instrucoes para captura manual via DevTools + extensoes de browser
+
+Output salvo em `./vsls-capturados/` no diretorio onde o script e executado.
 
 ## Personalidade do Sistema
 

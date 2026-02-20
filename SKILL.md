@@ -20,6 +20,7 @@ Sistema que executa pesquisa de mercado completa via WebSearch/WebFetch + subage
 | "Quem esta mais escalado e como opera?" | OBJ 3 | Rankeia concorrentes por escala, gera dossie profundo dos top 5-10 |
 | "Mapeia o funil completo desse concorrente" | OBJ 4 | Descobre todas as paginas do funil, classifica, monta mapa do fluxo |
 | "Faz tudo: concorrentes + ofertas + dossies" | TODOS | Executa OBJ 1 → 2 → 3 em sequencia, usando output de cada um como input do proximo |
+| "Baixa a VSL desse concorrente" | OBJ 5 | Captura video VSL bloqueado por Vturb, ConvertAI, Bunny, HLS — 5 metodos em cascata |
 
 ---
 
@@ -1013,8 +1014,105 @@ Antes de marcar qualquer objetivo como completo:
 
 ---
 
+---
+
+## OBJETIVO 5: CAPTURAR VSL DO CONCORRENTE (Download de Video Bloqueado)
+
+**Input:** URL da pagina com a VSL (ou URL m3u8 direta)
+**Output:** Arquivo MP4 salvo em `./vsls-capturados/`
+**Players suportados:** Vturb, ConvertAI, Bunny.net, Wistia, Vimeo, HLS/M3U8 customizado
+
+### Como funciona tecnicamente
+
+Vturb e ConvertAI servem videos via **HLS (HTTP Live Streaming)** — o video e dividido em segmentos `.ts` apontados por um arquivo `.m3u8`. O player JavaScript monta esses segmentos no browser. O download captura esses segmentos e remonta em MP4.
+
+### Metodo 1: Script automatico (mais rapido)
+
+```bash
+# Uso basico — tenta automaticamente
+./scripts/download-vsl.sh https://concorrente.com.br/vsl
+
+# Com nome customizado
+./scripts/download-vsl.sh https://concorrente.com.br/vsl nome-do-arquivo
+
+# Se ja tiver a URL m3u8 (capturada manualmente)
+./scripts/download-vsl.sh "https://cdn.vturb.com.br/.../index.m3u8" vsl-concorrente
+```
+
+O script tenta 5 metodos em cascata, parando ao primeiro que funcionar:
+1. `yt-dlp` automatico (detecta player Vturb, Bunny, Wistia, Vimeo, HLS)
+2. `yt-dlp` com User-Agent de browser real (bypass de deteccao de bot)
+3. `yt-dlp` com cookies do Chrome (para conteudo autenticado/paywall)
+4. `ffmpeg` direta em URL m3u8 (para URLs m3u8 capturadas manualmente)
+5. Instrucoes detalhadas para extracao manual via DevTools
+
+### Metodo 2: Via agente (quando script nao resolve)
+
+Se o script falhar nos 4 primeiros metodos, o agente executa via Bash:
+
+```bash
+# Extrair URL do stream sem baixar (util para diagnostico)
+yt-dlp -g "URL_DA_PAGINA"
+
+# Download direto com yt-dlp e ffmpeg em conjunto
+yt-dlp --downloader ffmpeg -f "bestvideo+bestaudio" "URL_DA_PAGINA" -o "vsl.mp4"
+
+# ffmpeg com URL m3u8 capturada manualmente
+ffmpeg -protocol_whitelist file,http,https,tcp,tls,crypto \
+       -i "URL_M3U8" -c copy output.mp4
+```
+
+### Metodo 3: Captura manual via DevTools (fallback humano)
+
+Quando todos os metodos automaticos falham (ex: player com DRM pesado):
+
+1. Abrir Chrome com DevTools (F12) → aba **Network**
+2. Filtrar por `m3u8`
+3. Abrir a pagina e dar PLAY no video
+4. Copiar a URL da requisicao m3u8 que aparecer
+5. Passar essa URL para o script: `./scripts/download-vsl.sh "URL_M3U8" nome`
+
+**Extensoes de browser que capturam automaticamente:**
+- Chrome: [HLS Downloader](https://chromewebstore.google.com/detail/hls-downloader/hkbifmjmkohpemgdkknlbgmnpocooogp)
+- Firefox: [Live Stream Downloader](https://addons.mozilla.org/en-US/firefox/addon/live-stream-downloader/)
+- Chrome: [Stream Recorder](https://www.hlsloader.com/)
+
+### Dependencias necessarias
+
+```bash
+# Instalar (macOS)
+brew install yt-dlp ffmpeg
+
+# Verificar versoes
+yt-dlp --version   # deve ser 2025.x ou mais recente
+ffmpeg -version
+```
+
+### Limitacoes conhecidas
+
+| Cenario | Status |
+|---------|--------|
+| Vturb sem protecao extra | Funciona (Metodo 1 ou 2) |
+| ConvertAI padrao | Funciona (Metodo 1 ou 2) |
+| Bunny.net CDN | Funciona (Metodo 1) |
+| Wistia, Vimeo | Funciona (Metodo 1) |
+| YouTube | Funciona (Metodo 1) |
+| Vturb com token de acesso | Funciona (Metodo 3 — cookies) |
+| Conteudo com DRM (Widevine) | Nao automatizavel — requer captura de tela |
+
+### Integracao com Objetivo 4
+
+Durante o mapeamento de funil (OBJ 4), ao encontrar pagina com VSL:
+1. Registrar URL da pagina no mapa do funil
+2. Executar OBJ 5 automaticamente para capturar a VSL
+3. Salvar em `vsls-capturados/vsl-[concorrente]-[tipo].mp4`
+4. Incluir no swipefile: duracao estimada, tipo de hook, angulo principal
+
+---
+
 ## RECURSOS INCLUIDOS
 
 - `references/metodologia-completa.md` — Documento-mestre com toda a teoria, conceitos e tecnicas detalhadas (Russell Brunson, 3 tipos de hacking, 16 tecnicas avancadas, ferramentas pagas, termos estrategicos)
 - `references/fallbacks-e-falhas.md` — Auditoria completa de 31 pontos de falha com solucoes preventivas
 - `scripts/google-dork-funnel.sh` — Script bash que gera TODAS as queries de Google Dorking para um dominio dado
+- `scripts/download-vsl.sh` — Script bash para captura de VSL bloqueadas (Vturb, ConvertAI, HLS/M3U8) — 5 metodos em cascata com ffmpeg e yt-dlp
