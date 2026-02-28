@@ -1,11 +1,11 @@
 ---
 name: funnel-hacking
-description: "Sistema autonomo de inteligencia de mercado (funnel hacking etico/benchmarking) que pesquisa, valida e gera dossies completos sem intervencao humana. Use quando: (1) Descobrir concorrentes de um nicho (20-40, diretos + indiretos); (2) Encontrar ofertas escaladas para modelar; (3) Rankear concorrentes por escala e gerar dossies profundos; (4) Mapear funil completo de um concorrente especifico. Palavras-chave: funnel hacking, concorrentes, ofertas escaladas, inteligencia de mercado, espionagem etica, benchmarking, funil, dossie, swipefile, escala."
+description: "Sistema autonomo de inteligencia de mercado, aquisicao de ativos digitais e infiltracao de funis. Use quando: (1) Descobrir concorrentes de um nicho (20-40, diretos + indiretos); (2) Encontrar ofertas escaladas para modelar; (3) Rankear concorrentes por escala e gerar dossies profundos; (4) Mapear funil completo de um concorrente especifico; (5) Capturar VSL bloqueada; (6) Buscar e baixar qualquer material digital (PDFs, livros, lead magnets, iscas gratuitas); (7) Infiltrar funil completo via browser automation (navegar formularios, agendar, tirar screenshots de cada etapa). Palavras-chave: funnel hacking, concorrentes, ofertas escaladas, inteligencia de mercado, espionagem etica, benchmarking, funil, dossie, swipefile, escala, download, PDF, lead magnet, isca, browser automation, screenshot, infiltrar, formulario."
 ---
 
-# Funnel Hacking — Sistema Autonomo de Inteligencia de Mercado
+# Funnel Hacking — Sistema Autonomo de Inteligencia de Mercado e Aquisicao de Ativos
 
-Sistema que executa pesquisa de mercado completa via WebSearch/WebFetch + subagentes, sem intervencao humana. Pesquisa, valida, cruza dados, tenta metodos alternativos quando um falha, e gera output completo em arquivos organizados.
+Sistema que executa pesquisa de mercado completa, busca e baixa materiais digitais, e infiltra funis de concorrentes via browser automation — tudo via WebSearch/WebFetch/Playwright + subagentes, sem intervencao humana. Pesquisa, valida, cruza dados, tenta metodos alternativos quando um falha, e gera output completo em arquivos organizados.
 
 ## Personalidade
 
@@ -21,6 +21,8 @@ Sistema que executa pesquisa de mercado completa via WebSearch/WebFetch + subage
 | "Mapeia o funil completo desse concorrente" | OBJ 4 | Descobre todas as paginas do funil, classifica, monta mapa do fluxo |
 | "Faz tudo: concorrentes + ofertas + dossies" | TODOS | Executa OBJ 1 → 2 → 3 em sequencia, usando output de cada um como input do proximo |
 | "Baixa a VSL desse concorrente" | OBJ 5 | Captura video VSL bloqueado por Vturb, ConvertAI, Bunny, HLS — 5 metodos em cascata |
+| "Busca esse PDF/livro/material pra mim" | OBJ 6 | Pesquisa em 20+ fontes, valida links, baixa arquivo e verifica integridade |
+| "Infiltra o funil desse concorrente" | OBJ 7 | Navega o funil inteiro via Playwright, preenche formularios, tira screenshots de cada etapa, monta mapa visual |
 
 ---
 
@@ -51,8 +53,8 @@ Sistema que executa pesquisa de mercado completa via WebSearch/WebFetch + subage
 16. Meta Ad Library NAO e acessivel via WebFetch. Compensar com: Google Dork disclaimer Facebook + deteccao de pixel no HTML + WebSearch por "[marca] facebook ad"
 
 ### Exclusoes
-17. NAO incluir tecnicas que exigem acao humana: comprar produto, criar email, se inscrever como afiliado, navegar manualmente
-18. NAO usar ferramentas pagas que exigem login (BigSpy, AdHeart, Video AdVault) — usar apenas metodos acessiveis via WebSearch/WebFetch
+17. NAO comprar produtos, criar emails reais ou se inscrever como afiliado. PODE navegar automaticamente via Playwright para: preencher formularios, agendar horarios, capturar screenshots, interagir com paginas multi-step. Usar dados ficticios padrao (nome: Pesquisa Mercado, email: pesquisa@exemplo.com, telefone: 11999999999). PODE baixar materiais gratuitos (PDFs, lead magnets, iscas) de qualquer site.
+18. NAO usar ferramentas pagas que exigem login (BigSpy, AdHeart, Video AdVault) — usar apenas metodos acessiveis via WebSearch/WebFetch/Playwright
 
 ---
 
@@ -1012,6 +1014,22 @@ Antes de marcar qualquer objetivo como completo:
 - [ ] Mapa do fluxo montado?
 - [ ] Marcacao [CONFIRMADO] vs [INFERIDO] aplicada?
 
+**Objetivo 6:**
+- [ ] Minimo 5 subagentes pesquisaram em paralelo?
+- [ ] Validacao de links executada?
+- [ ] Cascata de download tentada (curl → Playwright → manual)?
+- [ ] Arquivo verificado (tipo, paginas, tamanho)?
+- [ ] Relatorio final gerado?
+
+**Objetivo 7:**
+- [ ] Reconhecimento executado (WebFetch na URL de entrada)?
+- [ ] Tipo de funil classificado?
+- [ ] Playwright crawler executado?
+- [ ] Screenshots de TODAS as paginas salvas?
+- [ ] Dados extraidos por pagina (JSON)?
+- [ ] Mapa visual em Mermaid gerado?
+- [ ] Swipefile atualizado com copies/CTAs?
+
 ---
 
 ---
@@ -1140,9 +1158,371 @@ Durante o mapeamento de funil (OBJ 4), ao encontrar pagina com VSL:
 
 ---
 
+## OBJETIVO 6: BUSCAR E BAIXAR MATERIAL DIGITAL
+
+**Input:** Titulo/descricao do material + tipo (PDF, video, imagem, etc.) + autor (se conhecido)
+**Output:** Arquivo salvo em `./ativos-capturados/`
+
+### Etapa 1: Pesquisa Multi-Tier (5 subagentes paralelos)
+
+**Subagente 1 — Busca Direta:**
+```
+TAREFA: Pesquisar o material "[TITULO]" por [AUTOR] via busca direta.
+
+EXECUTAR:
+1. WebSearch: "[titulo]" filetype:pdf
+2. WebSearch: "[titulo]" download PDF free
+3. WebSearch: "[titulo] [autor]" PDF
+4. WebSearch: "[titulo]" PDF download 2025 2026
+5. WebSearch: "[titulo]" ebook free
+
+Para CADA resultado: extrair URL, nome do site, tipo de acesso (direto/conta/pago).
+Escrever IMEDIATAMENTE em: objetivo-6-ativos/busca-direta.md
+Formato: | Fonte | URL | Tipo de Acesso | Tamanho (se visivel) |
+```
+
+**Subagente 2 — Bibliotecas Digitais:**
+```
+TAREFA: Pesquisar "[TITULO]" em bibliotecas digitais.
+
+EXECUTAR:
+1. WebSearch: "[titulo]" site:z-library.sk
+2. WebSearch: "[titulo]" site:zlib.pub
+3. WebSearch: "[titulo]" site:archive.org
+4. WebSearch: "[titulo]" site:openlibrary.org
+5. WebSearch: "[titulo]" site:vdoc.pub
+6. WebSearch: "[titulo]" site:scribd.com
+7. WebSearch: "[titulo]" site:pdfdrive.com
+
+Para CADA resultado: extrair URL, plataforma, formato, tamanho.
+Escrever em: objetivo-6-ativos/bibliotecas-digitais.md
+```
+
+**Subagente 3 — Plataformas de Compartilhamento:**
+```
+TAREFA: Pesquisar "[TITULO]" em plataformas de compartilhamento de documentos.
+
+EXECUTAR:
+1. WebSearch: "[titulo]" site:pdfcoffee.com
+2. WebSearch: "[titulo]" site:kupdf.net
+3. WebSearch: "[titulo]" site:slideshare.net
+4. WebSearch: "[titulo]" site:academia.edu
+5. WebSearch: "[titulo]" site:issuu.com
+6. WebSearch: "[titulo]" site:calameo.com
+
+Escrever em: objetivo-6-ativos/plataformas-compartilhamento.md
+```
+
+**Subagente 4 — Comunidades e Links Diretos:**
+```
+TAREFA: Pesquisar "[TITULO]" em comunidades, forums e links diretos.
+
+EXECUTAR:
+1. WebSearch: "[titulo]" download reddit
+2. WebSearch: "[titulo]" PDF telegram
+3. WebSearch: "[titulo]" free download
+4. WebSearch: "[titulo]" drive.google.com
+5. WebSearch: "[titulo]" dropbox.com
+6. WebSearch: "[titulo]" mega.nz
+7. WebSearch: "[titulo]" mediafire.com
+
+Escrever em: objetivo-6-ativos/comunidades-links.md
+```
+
+**Subagente 5 — Pensamento Lateral:**
+```
+TAREFA: Pesquisar "[TITULO]" com abordagens criativas e nao-obvias.
+
+EXECUTAR:
+1. WebSearch: "[titulo]" [variacoes do nome — com/sem subtitulo, abreviado]
+2. WebSearch: "[autor]" books PDF download
+3. WebSearch: "[titulo em outro idioma]"
+4. WebSearch: "[titulo]" github OR gitlab
+5. WebSearch: "[titulo]" course download
+6. WebSearch: "[titulo]" swipe file
+7. Se material de marketing: WebSearch no iMWarriorTools, wislibrary, giolib
+
+Escrever em: objetivo-6-ativos/pensamento-lateral.md
+```
+
+**Pos-lote:** Agente principal verifica se os 5 arquivos existem e tem conteudo. Re-dispara qualquer subagente que falhou.
+
+### Etapa 2: Validacao de Links
+
+Para cada URL encontrada, subagente de validacao:
+```
+TAREFA: Validar links encontrados para "[TITULO]".
+URLs: [LISTA]
+
+Para CADA URL:
+1. WebFetch na pagina
+2. Verificar se contem:
+   - Botao de download visivel
+   - Captcha (hCaptcha, reCAPTCHA, cloudflare challenge)
+   - Exigencia de login/conta
+   - Paywall
+3. Classificar:
+   - DOWNLOAD_DIRETO: URL serve arquivo sem obstaculos
+   - REQUER_CONTA: precisa criar conta (gratuita)
+   - REQUER_CAPTCHA: precisa resolver captcha
+   - REQUER_TRIAL: precisa de trial (Scribd 30 dias, etc.)
+   - PAGO: exige pagamento
+4. Se DOWNLOAD_DIRETO: extrair URL real do arquivo (href do botao, action do form)
+
+Escrever em: objetivo-6-ativos/validacao-links.md
+Formato: | URL | Status | URL Real (se encontrada) | Notas |
+```
+
+### Etapa 3: Download (cascata de metodos)
+
+Agente principal executa em ordem de prioridade:
+
+```
+1. DOWNLOAD_DIRETO:
+   curl -L -o "[destino]" -H "User-Agent: Mozilla/5.0..." "[URL]"
+   Verificar: file "[destino]" → deve ser PDF/tipo esperado, nao HTML
+
+2. Se curl baixou HTML (captcha/redirect):
+   → Playwright headless:
+   node scripts/screenshot-page.js --url="[URL]" --download --output="[destino]"
+
+3. Se REQUER_CONTA (Scribd, Z-Library, etc.):
+   → Entregar link ao usuario com instrucoes de como criar conta e baixar
+
+4. Se REQUER_CAPTCHA:
+   → Playwright com interacao (scripts/funnel-crawler.js)
+   → Se captcha complexo: entregar link ao usuario
+
+5. Se TODOS falharem:
+   → Entregar lista ranqueada de links com instrucoes para o usuario abrir no browser
+```
+
+### Etapa 4: Verificacao
+
+Apos download:
+```bash
+# Verificar tipo de arquivo
+file "[arquivo]"
+
+# Se PDF: contar paginas
+python3 -c "
+import subprocess
+result = subprocess.run(['mdls', '-name', 'kMDItemNumberOfPages', '[arquivo]'], capture_output=True, text=True)
+print(result.stdout)
+"
+# Alternativa: pdfinfo (se disponivel) ou exiftool
+
+# Se video: verificar duracao
+ffprobe -v quiet -show_entries format=duration -of csv=p=0 "[arquivo]"
+
+# Verificar tamanho
+ls -lh "[arquivo]"
+```
+
+### Etapa 5: Compilacao
+
+Gerar `objetivo-6-ativos/relatorio.md`:
+```
+# Busca: [TITULO]
+Data: [data]
+
+## Resultado
+- Status: BAIXADO / NAO ENCONTRADO / LINKS ENTREGUES
+- Arquivo: [path]
+- Tamanho: [tamanho]
+- Paginas/Duracao: [info]
+- Fonte: [site onde baixou]
+
+## Todas as Fontes Encontradas
+| # | Fonte | URL | Status | Notas |
+
+## Fontes Alternativas (caso precise re-baixar)
+[Links que funcionam mas nao foram usados]
+```
+
+### Checklist OBJ 6:
+- [ ] Minimo 5 subagentes pesquisaram em paralelo?
+- [ ] Validacao de links executada?
+- [ ] Cascata de download tentada (curl → Playwright → manual)?
+- [ ] Arquivo verificado (tipo, paginas, tamanho)?
+- [ ] Relatorio final gerado?
+
+---
+
+## OBJETIVO 7: INFILTRAR FUNIL COMPLETO (Browser Automation)
+
+**Input:** URL de entrada do funil do concorrente
+**Output:**
+- Screenshots de CADA pagina em `./funil-infiltrado/screenshots/`
+- Dados extraidos de cada etapa em JSON
+- Mapa visual do fluxo em Mermaid
+- Swipefile com copies, CTAs, estruturas
+
+**Dependencias:** Node.js + Playwright (`npx playwright install chromium` na primeira execucao)
+
+### Etapa 1: Reconhecimento (sem browser)
+
+```
+1. WebFetch na URL de entrada
+2. Identificar tipo de pagina (LP, formulario, VSL, quiz, etc.)
+3. Extrair todos os links internos e formularios do HTML
+4. Classificar tipo de funil provavel:
+   - CAPTURA → VENDAS (LP com form simples → PV → CK)
+   - SESSAO ESTRATEGICA (LP → formulario de qualificacao → calendario)
+   - WEBINAR (LP → registro → pagina de webinar → oferta)
+   - QUIZ (quiz → resultado → oferta personalizada)
+   - DESAFIO (LP → registro → sequencia de aulas)
+5. Registrar em: funil-infiltrado/reconhecimento.md
+```
+
+### Etapa 2: Navegacao Automatizada via Playwright
+
+Executar script `scripts/funnel-crawler.js`:
+
+```bash
+node scripts/funnel-crawler.js \
+  --url="URL_DE_ENTRADA" \
+  --output="./funil-infiltrado" \
+  --max-pages=10 \
+  --fill-forms
+```
+
+O script faz:
+1. Abre browser Chromium headless
+2. Navega para URL de entrada
+3. Tira screenshot full-page (PNG, 1920px largura)
+4. Detecta formularios na pagina:
+   - Extrai campos (name, type, placeholder, label associado)
+   - Preenche com dados ficticios padrao:
+     - Nome: "Pesquisa Mercado"
+     - Email: "pesquisa@exemplo.com"
+     - Telefone: "(11) 99999-9999"
+     - Empresa: "Pesquisa de Mercado Ltda"
+     - WhatsApp: "11999999999"
+     - Campos select: seleciona primeira opcao nao-vazia
+     - Campos radio/checkbox: seleciona primeiro
+     - Campos textarea: "Pesquisa de mercado e benchmarking"
+     - Outros: resposta generica baseada no label/placeholder
+5. Submete o formulario
+6. Aguarda redirect/nova pagina (max 10s)
+7. Screenshot da nova pagina
+8. Extrai dados da pagina: headline, sub-headline, CTAs, precos
+9. Repete para cada pagina subsequente:
+   - Se formulario → preenche e submete
+   - Se pagina de agendamento (Calendly, TidyCal, etc.) → screenshot SEM agendar
+   - Se pagina de video/VSL → screenshot + captura URL do video
+   - Se pagina de vendas → screenshot + extrai oferta completa
+   - Se checkout → screenshot (NAO comprar, PARAR aqui)
+   - Se pagina de membros/login → screenshot (PARAR aqui)
+10. Para quando: checkout, login, loop detectado (URL repetida), ou max-pages atingido
+
+**Dados salvos por pagina** (em `funil-infiltrado/dados/pagina-N.json`):
+```json
+{
+  "step": 1,
+  "url": "https://...",
+  "type": "LP|FORM|CALENDAR|VSL|PV|CK|TY",
+  "screenshot": "screenshots/pagina-1.png",
+  "headline": "...",
+  "subheadline": "...",
+  "ctas": ["Texto do botao 1", "Texto do botao 2"],
+  "form_fields": [
+    {"name": "email", "type": "email", "label": "Seu melhor email", "required": true}
+  ],
+  "price": null,
+  "timer": false,
+  "testimonials": 0,
+  "links_found": ["url1", "url2"]
+}
+```
+
+### Etapa 3: Screenshots Avulsos
+
+Para paginas que o crawler nao conseguiu acessar, usar script simples:
+```bash
+node scripts/screenshot-page.js --url="URL" --output="./funil-infiltrado/screenshots/extra-N.png"
+```
+
+### Etapa 4: Montagem do Mapa Visual
+
+Agente principal le os JSONs e gera `funil-infiltrado/mapa-visual.md`:
+
+```markdown
+# Mapa do Funil: [CONCORRENTE]
+Data: [data]
+
+## Diagrama de Fluxo
+
+```mermaid
+graph TD
+    P1["1. LP: Headline da LP"]
+    P2["2. Formulario: 5 campos"]
+    P3["3. Calendario: Agendar sessao"]
+    P4["4. TY: Confirmacao"]
+
+    P1 -->|"Preenche form"| P2
+    P2 -->|"Submete"| P3
+    P3 -->|"Screenshot"| P4
+
+    style P1 fill:#4CAF50,color:#fff
+    style P2 fill:#2196F3,color:#fff
+    style P3 fill:#FF9800,color:#fff
+    style P4 fill:#9C27B0,color:#fff
+```
+
+## Detalhes por Pagina
+
+### Pagina 1: Landing Page
+- **URL:** [url]
+- **Screenshot:** [link para imagem]
+- **Headline:** [headline]
+- **CTA:** [texto do botao]
+
+### Pagina 2: Formulario de Qualificacao
+- **Campos:**
+  - Nome (text, obrigatorio)
+  - Email (email, obrigatorio)
+  - Telefone (tel)
+  - Faturamento mensal (select: opcoes)
+  - Principal desafio (textarea)
+- **CTA:** "Quero minha sessao gratuita"
+
+[... continua para cada pagina]
+
+## Resumo do Funil
+- Tipo: SESSAO ESTRATEGICA
+- Total de paginas: 4
+- Campos de qualificacao: 5
+- Tem VSL: Sim/Nao
+- Tem timer/urgencia: Sim/Nao
+- Stack detectado: [ClickFunnels, ActiveCampaign, Calendly]
+```
+
+### Integracao com Miro/Lucidchart/FigJam
+
+O Mermaid gerado pode ser exportado para:
+1. **VS Code** — renderiza nativamente com extensao Mermaid
+2. **HTML standalone** — gerar com `<script src="mermaid.min.js">` para abrir no browser
+3. **Miro** — copiar screenshots e montar board manualmente (instruir usuario)
+4. **Lucidchart** — importar Mermaid via ferramenta online mermaid.live → exportar
+5. **FigJam** — arrastar screenshots para board (instruir usuario)
+
+### Checklist OBJ 7:
+- [ ] Reconhecimento executado (WebFetch na URL de entrada)?
+- [ ] Tipo de funil classificado?
+- [ ] Playwright crawler executado?
+- [ ] Screenshots de TODAS as paginas salvas?
+- [ ] Dados extraidos por pagina (JSON)?
+- [ ] Mapa visual em Mermaid gerado?
+- [ ] Swipefile atualizado com copies/CTAs?
+
+---
+
 ## RECURSOS INCLUIDOS
 
 - `references/metodologia-completa.md` — Documento-mestre com toda a teoria, conceitos e tecnicas detalhadas (Russell Brunson, 3 tipos de hacking, 16 tecnicas avancadas, ferramentas pagas, termos estrategicos)
 - `references/fallbacks-e-falhas.md` — Auditoria completa de 31 pontos de falha com solucoes preventivas
 - `scripts/google-dork-funnel.sh` — Script bash que gera TODAS as queries de Google Dorking para um dominio dado
 - `scripts/download-vsl.sh` — Script bash para captura de VSL bloqueadas (Vturb, ConvertAI, HLS/M3U8) — 5 metodos em cascata com ffmpeg e yt-dlp
+- `scripts/funnel-crawler.js` — Script Playwright para navegacao automatizada de funis: preenche formularios, tira screenshots, extrai dados de cada pagina, gera mapa Mermaid
+- `scripts/screenshot-page.js` — Script Playwright para screenshot full-page de qualquer URL

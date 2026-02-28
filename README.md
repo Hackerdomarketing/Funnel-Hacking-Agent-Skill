@@ -45,11 +45,13 @@ Use quando precisar:
 2. Encontrar ofertas escaladas para modelar
 3. Rankear concorrentes por escala e gerar dossies profundos
 4. Mapear funil completo de um concorrente especifico
-5. Construir swipefile automatico (copies, criativos, estruturas de oferta)
+5. Capturar VSL bloqueada de concorrente
+6. **Buscar e baixar qualquer material digital** (PDFs, livros, lead magnets, iscas)
+7. **Infiltrar funil completo via browser** (navegar formularios, agendar, tirar screenshots)
 
-**Palavras-chave para ativar:** funnel hacking, concorrentes, ofertas escaladas, inteligencia de mercado, espionagem etica, benchmarking, funil, dossie, swipefile, escala
+**Palavras-chave para ativar:** funnel hacking, concorrentes, ofertas escaladas, inteligencia de mercado, espionagem etica, benchmarking, funil, dossie, swipefile, escala, download, PDF, lead magnet, isca, browser automation, screenshot, infiltrar, formulario
 
-## Os 5 Objetivos
+## Os 7 Objetivos
 
 | # | Objetivo | Input | Output |
 |---|----------|-------|--------|
@@ -58,6 +60,8 @@ Use quando precisar:
 | 3 | Concorrentes Escalados | Lista de concorrentes | Ranking de escala + dossie profundo dos top 5-10 |
 | 4 | Mapear Funil Completo | URL de um concorrente | Mapa de todas as paginas, fluxo completo |
 | 5 | Capturar VSL Bloqueada | URL da pagina ou m3u8 | Arquivo MP4 local da VSL do concorrente |
+| 6 | Buscar/Baixar Material | Titulo + autor + tipo | Arquivo baixado + relatorio de fontes |
+| 7 | Infiltrar Funil | URL de entrada | Screenshots + mapa visual Mermaid + dados JSON |
 
 ## Como Usar
 
@@ -142,7 +146,10 @@ funnel-hacking/
 │   ├── metodologia-completa.md           # Documento-mestre (2697 linhas, 12.704 palavras)
 │   └── fallbacks-e-falhas.md             # 31 pontos de falha com solucoes preventivas
 ├── scripts/
-│   └── google-dork-funnel.sh             # Gerador de queries Google Dorking
+│   ├── google-dork-funnel.sh             # Gerador de queries Google Dorking
+│   ├── download-vsl.sh                   # Captura de VSL bloqueadas (5 metodos)
+│   ├── funnel-crawler.js                 # Navegacao automatizada de funis (Playwright)
+│   └── screenshot-page.js               # Screenshot full-page de qualquer URL (Playwright)
 └── assets/                               # Templates e recursos futuros
 ```
 
