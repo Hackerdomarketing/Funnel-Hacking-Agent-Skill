@@ -125,16 +125,36 @@ O output em arquivo torna a integracao facil: cada step le arquivos do step ante
 
 ## Instalacao
 
-Para instalar em uma nova maquina:
+### Para Claude Code (Mac, Windows, VS Code, Terminal)
 
+Abra o terminal e cole **um unico comando**. Ele instala tudo automaticamente
+(inclusive Homebrew, Node.js e Claude Code, se nao tiver):
+
+**Mac:**
 ```bash
-# Clonar o repositorio na pasta de skills do Claude Code
-git clone https://github.com/Hackerdomarketing/Funnel-Hacking-Agent-Skill.git \
-  ~/.claude/skills/funnel-hacking
-
-# Tornar o script executavel
-chmod +x ~/.claude/skills/funnel-hacking/scripts/google-dork-funnel.sh
+curl -fsSL https://raw.githubusercontent.com/Hackerdomarketing/Funnel-Hacking-Agent-Skill/main/install.sh | bash
 ```
+
+**Windows (PowerShell como Administrador):**
+```powershell
+irm https://raw.githubusercontent.com/Hackerdomarketing/Funnel-Hacking-Agent-Skill/main/install.ps1 | iex
+```
+
+Depois de instalar, abra o Claude Code e digite `/funnel-hacking` para ativar.
+
+---
+
+### Para Claude Chat (claude.ai — sem Claude Code)
+
+Se voce usa o Claude pelo site ou app (sem Claude Code), faca o download destes 3 arquivos e anexe na conversa:
+
+1. **[SKILL.md](SKILL.md)** — o cerebro da skill (obrigatorio)
+2. **[metodologia-completa.md](references/metodologia-completa.md)** — referencia detalhada
+3. **[fallbacks-e-falhas.md](references/fallbacks-e-falhas.md)** — solucoes de fallback
+
+Ou crie um **Projeto** no Claude e adicione os 3 arquivos como conhecimento — assim nao precisa anexar toda vez.
+
+> **Nota:** No Claude Chat, funcoes que precisam de terminal (download de VSL, browser automation) nao ficam disponiveis. As funcoes de pesquisa e analise funcionam normalmente.
 
 ## Estrutura da Skill
 
