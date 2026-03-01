@@ -3,9 +3,10 @@
 # ============================================================
 # Instalador da Skill: Funnel Hacking Agent
 # Repositório: https://github.com/Hackerdomarketing/Funnel-Hacking-Agent-Skill
+#
+# Detecta e instala automaticamente tudo que for necessário:
+# Homebrew, Node.js, Claude Code CLI, e a skill completa.
 # ============================================================
-
-set -e
 
 # Cores para mensagens
 VERDE='\033[0;32m'
@@ -24,16 +25,120 @@ echo -e "${AZUL}${NEGRITO}================================================${RESE
 echo -e "${AZUL}${NEGRITO}   Instalando: Funnel Hacking Agent Skill       ${RESET}"
 echo -e "${AZUL}${NEGRITO}================================================${RESET}"
 echo ""
+echo -e "  Vou verificar tudo que precisa e instalar"
+echo -e "  automaticamente. Pode demorar alguns minutos"
+echo -e "  na primeira vez."
+echo ""
 
-# ── PASSO 1: Criar pastas ───────────────────────────────────
-echo -e "${AMARELO}▶ Criando pastas...${RESET}"
+# ═══════════════════════════════════════════════════════════
+# FASE 1: VERIFICAR E INSTALAR PRÉ-REQUISITOS
+# ═══════════════════════════════════════════════════════════
+
+echo -e "${AZUL}${NEGRITO}── FASE 1: Verificando pré-requisitos ──${RESET}"
+echo ""
+
+# ── 1.1: Homebrew (gerenciador de pacotes do Mac) ──────────
+echo -e "${AMARELO}▶ Verificando Homebrew...${RESET}"
+
+if command -v brew &>/dev/null; then
+    echo -e "${VERDE}  ✓ Homebrew já está instalado${RESET}"
+else
+    echo -e "  Homebrew não encontrado. Instalando..."
+    echo -e "  (O Mac pode pedir sua senha de usuário — é normal)"
+    echo ""
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    # Adicionar Homebrew ao PATH para Apple Silicon (M1/M2/M3/M4)
+    if [ -f "/opt/homebrew/bin/brew" ]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+        # Garantir que funcione em futuras sessões do terminal
+        if [ -f "$HOME/.zprofile" ]; then
+            grep -q 'eval "$(/opt/homebrew/bin/brew shellenv)"' "$HOME/.zprofile" 2>/dev/null || \
+                echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$HOME/.zprofile"
+        else
+            echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$HOME/.zprofile"
+        fi
+    fi
+
+    if command -v brew &>/dev/null; then
+        echo -e "${VERDE}  ✓ Homebrew instalado com sucesso${RESET}"
+    else
+        echo -e "${VERMELHO}  ✗ Não consegui instalar o Homebrew. Mas vou tentar continuar.${RESET}"
+    fi
+fi
+echo ""
+
+# ── 1.2: Node.js ──────────────────────────────────────────
+echo -e "${AMARELO}▶ Verificando Node.js...${RESET}"
+
+if command -v node &>/dev/null; then
+    NODE_VERSION=$(node --version)
+    echo -e "${VERDE}  ✓ Node.js já está instalado (versão $NODE_VERSION)${RESET}"
+else
+    echo -e "  Node.js não encontrado. Instalando..."
+    if command -v brew &>/dev/null; then
+        brew install node 2>/dev/null
+        if command -v node &>/dev/null; then
+            echo -e "${VERDE}  ✓ Node.js instalado com sucesso${RESET}"
+        else
+            echo -e "${VERMELHO}  ✗ Não consegui instalar o Node.js.${RESET}"
+        fi
+    else
+        echo -e "${AMARELO}  Sem Homebrew disponível. Pulando instalação do Node.js.${RESET}"
+        echo -e "  (Funções avançadas como download de VSL ficarão desativadas)${RESET}"
+    fi
+fi
+echo ""
+
+# ── 1.3: Claude Code CLI ─────────────────────────────────
+echo -e "${AMARELO}▶ Verificando Claude Code...${RESET}"
+
+if [ -d "$HOME/.claude" ]; then
+    echo -e "${VERDE}  ✓ Claude Code já está configurado${RESET}"
+else
+    echo -e "  Pasta do Claude Code não encontrada."
+
+    if command -v claude &>/dev/null; then
+        echo -e "${VERDE}  ✓ Claude Code CLI encontrado. Criando pasta...${RESET}"
+        mkdir -p "$HOME/.claude"
+    elif command -v npm &>/dev/null; then
+        echo -e "  Instalando Claude Code via terminal..."
+        npm install -g @anthropic-ai/claude-code 2>/dev/null
+        if command -v claude &>/dev/null; then
+            echo -e "${VERDE}  ✓ Claude Code CLI instalado com sucesso${RESET}"
+            mkdir -p "$HOME/.claude"
+        else
+            echo -e "${AMARELO}  Não consegui instalar o CLI, mas vou criar a pasta.${RESET}"
+            echo -e "  Você pode usar o Claude Code pelo app desktop ou VS Code.${RESET}"
+            mkdir -p "$HOME/.claude"
+        fi
+    else
+        echo -e "${AMARELO}  Criando a pasta do Claude Code...${RESET}"
+        echo -e "  Quando você abrir o Claude Code pela primeira vez,"
+        echo -e "  ele vai reconhecer a skill automaticamente.${RESET}"
+        mkdir -p "$HOME/.claude"
+    fi
+fi
+echo ""
+
+echo -e "${VERDE}${NEGRITO}── Pré-requisitos prontos! ──${RESET}"
+echo ""
+
+# ═══════════════════════════════════════════════════════════
+# FASE 2: INSTALAR A SKILL
+# ═══════════════════════════════════════════════════════════
+
+echo -e "${AZUL}${NEGRITO}── FASE 2: Instalando a skill ──${RESET}"
+echo ""
+
+# ── 2.1: Criar pastas ────────────────────────────────────
+echo -e "${AMARELO}▶ Criando pastas da skill...${RESET}"
 mkdir -p "$SKILL_DIR/scripts"
 mkdir -p "$SKILL_DIR/references"
 mkdir -p "$SKILL_DIR/assets"
-mkdir -p "$HOME/.claude"
 echo -e "${VERDE}  ✓ Pastas criadas${RESET}"
 
-# ── PASSO 2: Baixar arquivos principais ────────────────────
+# ── 2.2: Baixar arquivos principais ──────────────────────
 echo -e "${AMARELO}▶ Baixando arquivos da skill...${RESET}"
 
 curl -fsSL "$REPO_RAW/SKILL.md"       -o "$SKILL_DIR/SKILL.md"
@@ -42,21 +147,20 @@ curl -fsSL "$REPO_RAW/package.json"   -o "$SKILL_DIR/package.json"
 
 echo -e "${VERDE}  ✓ Arquivos principais baixados${RESET}"
 
-# ── PASSO 3: Baixar scripts ────────────────────────────────
-echo -e "${AMARELO}▶ Baixando scripts...${RESET}"
+# ── 2.3: Baixar scripts ──────────────────────────────────
+echo -e "${AMARELO}▶ Baixando scripts de automação...${RESET}"
 
 curl -fsSL "$REPO_RAW/scripts/google-dork-funnel.sh" -o "$SKILL_DIR/scripts/google-dork-funnel.sh"
 curl -fsSL "$REPO_RAW/scripts/download-vsl.sh"       -o "$SKILL_DIR/scripts/download-vsl.sh"
 curl -fsSL "$REPO_RAW/scripts/funnel-crawler.js"     -o "$SKILL_DIR/scripts/funnel-crawler.js"
 curl -fsSL "$REPO_RAW/scripts/screenshot-page.js"    -o "$SKILL_DIR/scripts/screenshot-page.js"
 
-# Dar permissão de execução nos scripts shell
 chmod +x "$SKILL_DIR/scripts/google-dork-funnel.sh"
 chmod +x "$SKILL_DIR/scripts/download-vsl.sh"
 
 echo -e "${VERDE}  ✓ Scripts prontos${RESET}"
 
-# ── PASSO 4: Baixar referências ────────────────────────────
+# ── 2.4: Baixar referências ──────────────────────────────
 echo -e "${AMARELO}▶ Baixando documentação de referência...${RESET}"
 
 curl -fsSL "$REPO_RAW/references/metodologia-completa.md" -o "$SKILL_DIR/references/metodologia-completa.md"
@@ -64,20 +168,26 @@ curl -fsSL "$REPO_RAW/references/fallbacks-e-falhas.md"   -o "$SKILL_DIR/referen
 
 echo -e "${VERDE}  ✓ Referências baixadas${RESET}"
 
-# ── PASSO 5: Instalar dependências Node.js (opcional) ──────
-echo -e "${AMARELO}▶ Verificando Node.js...${RESET}"
+# ── 2.5: Instalar dependências npm ───────────────────────
+echo -e "${AMARELO}▶ Instalando dependências da skill...${RESET}"
 
 if command -v npm &>/dev/null; then
-    echo -e "  Node.js encontrado. Instalando dependências..."
     cd "$SKILL_DIR" && npm install --silent 2>/dev/null
     echo -e "${VERDE}  ✓ Dependências instaladas (Playwright disponível)${RESET}"
 else
-    echo -e "  Node.js não encontrado — tudo bem! A skill funciona normalmente."
-    echo -e "  (Apenas o download de VSL bloqueada ficará desativado)"
+    echo -e "  npm não disponível — pulando. A skill funciona normalmente."
+    echo -e "  (Apenas funções avançadas ficarão desativadas)"
 fi
+echo ""
 
-# ── PASSO 6: Configurar triggers no CLAUDE.md ──────────────
-echo -e "${AMARELO}▶ Configurando ativação automática no Claude Code...${RESET}"
+# ═══════════════════════════════════════════════════════════
+# FASE 3: CONFIGURAR TRIGGERS
+# ═══════════════════════════════════════════════════════════
+
+echo -e "${AZUL}${NEGRITO}── FASE 3: Configurando ativação automática ──${RESET}"
+echo ""
+
+echo -e "${AMARELO}▶ Configurando triggers no Claude Code...${RESET}"
 
 # Criar CLAUDE.md se não existir
 if [ ! -f "$CLAUDE_MD" ]; then
@@ -107,15 +217,23 @@ TRIGGER_BLOCK
 else
     echo -e "${VERDE}  ✓ Triggers já estavam configurados${RESET}"
 fi
+echo ""
 
-# ── CONCLUÍDO ───────────────────────────────────────────────
-echo ""
+# ═══════════════════════════════════════════════════════════
+# CONCLUÍDO
+# ═══════════════════════════════════════════════════════════
+
 echo -e "${VERDE}${NEGRITO}================================================${RESET}"
+echo -e "${VERDE}${NEGRITO}                                                ${RESET}"
 echo -e "${VERDE}${NEGRITO}   ✅ Funnel Hacking instalado com sucesso!     ${RESET}"
+echo -e "${VERDE}${NEGRITO}                                                ${RESET}"
 echo -e "${VERDE}${NEGRITO}================================================${RESET}"
 echo ""
-echo -e "  Como usar:"
-echo -e "  ${NEGRITO}1.${RESET} Abra o Claude Code"
+echo -e "  ${NEGRITO}Como usar:${RESET}"
+echo -e ""
+echo -e "  ${NEGRITO}1.${RESET} Abra o Claude Code (VS Code, terminal, ou app desktop)"
 echo -e "  ${NEGRITO}2.${RESET} Digite: ${NEGRITO}/funnel-hacking${RESET}"
 echo -e "  ${NEGRITO}3.${RESET} Ou escreva naturalmente, ex: ${NEGRITO}\"descobrir concorrentes\"${RESET}"
+echo ""
+echo -e "  ${AZUL}Dúvidas? Fale com quem te enviou este instalador.${RESET}"
 echo ""
