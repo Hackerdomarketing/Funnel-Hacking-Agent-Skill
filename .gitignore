@@ -1,0 +1,19 @@
+# Secrets e credenciais
+.env
+.env.*
+credentials.json
+*.pem
+*.key
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Dependencias
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
