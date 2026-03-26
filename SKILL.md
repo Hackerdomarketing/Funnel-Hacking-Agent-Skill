@@ -805,19 +805,91 @@ Para CADA URL:
    → WebSearch: "[nome_produto]" checkout "order bump" preco
    → Buscar evidencias de order bump em prints, reviews ou descricoes externas
 
+   METODO I — APIs gratuitas de renderizacao de browser (sem instalacao):
+   → Usar quando plataforma e SPA/CSR e metodos A-H falharam
+   → AVISO: estes metodos rendem a pagina EXECUTANDO JavaScript — conseguem capturar
+     dados de checkouts SPA (Eduzz, Monetizze) que WebFetch nao consegue
+   → Tentar em ordem:
+
+   I.1 — Jina AI Reader (mais recomendado — gratuito, sem API key):
+   WebFetch: https://r.jina.ai/[URL_CHECKOUT]
+   O Jina renderiza JS e retorna o conteudo em texto limpo
+   Buscar no retorno: "order bump", "adicionar", preco secundario
+
+   I.2 — Google Cache (se indexado):
+   WebFetch: https://webcache.googleusercontent.com/search?q=cache:[URL_CHECKOUT]
+   Pode ter versao renderizada do checkout
+   Buscar: dados de produto, order bump
+
+   I.3 — ScrapingBee API gratuita (1000 creditos gratis no signup):
+   WebFetch: https://app.scrapingbee.com/api/v1/?api_key=TRIAL&url=[URL_CHECKOUT]&render_js=true
+   Renderiza JS completamente
+   Buscar: bumps, order_bump no HTML retornado
+
+   → Se qualquer metodo I retornar HTML com dados de produto → parsear normalmente
+   → Se todos falharem → prosseguir para Metodo J
+
+   METODO J — Auto-instalacao de Playwright (ultimo recurso para SPA):
+   ⚠️  ATENCAO: Este metodo instala o Playwright APENAS para capturar order bumps
+       de checkouts SPA. NAO confundir com o Objetivo 7 (infiltracao de funil completo).
+       Esta instalacao e pontual, minimista e exclusiva para este fim.
+
+   Verificar se Node.js esta disponivel:
+   → Bash: node --version
+   → Se Node nao existe: informar usuario "Node.js nao encontrado. Instalar em nodejs.org"
+     e registrar "ORDER BUMP: requer Node.js — nao extraivel neste ambiente"
+
+   Se Node existe, instalar Playwright (cross-platform, detectar OS):
+
+   macOS / Linux:
+   → Bash: cd /tmp && npm init -y --quiet && npm install playwright --quiet
+   → Bash: node -e "require('playwright')" 2>/dev/null || npx playwright install chromium --quiet
+
+   Windows (PowerShell):
+   → Bash: cd $env:TEMP && npm init -y | Out-Null && npm install playwright --quiet
+   → Bash: npx playwright install chromium --quiet
+
+   Apos instalar, executar extracao via script Node inline:
+   → Criar script temporario /tmp/extract-bump.js (ou %TEMP%\extract-bump.js no Windows):
+
+   ```javascript
+   const { chromium } = require('playwright');
+   (async () => {
+     const browser = await chromium.launch({ headless: true });
+     const page = await browser.newPage();
+     const bumps = [];
+     page.on('response', async res => {
+       const url = res.url();
+       if (/bump|order.bump|orderbump/i.test(url) && res.headers()['content-type']?.includes('json')) {
+         try { const data = await res.json(); bumps.push({ url, data }); } catch(e) {}
+       }
+     });
+     await page.goto(process.argv[2], { waitUntil: 'networkidle', timeout: 30000 });
+     await page.waitForTimeout(3000);
+     const html = await page.content();
+     console.log(JSON.stringify({ html_snippet: html.substring(0, 5000), network_bumps: bumps }));
+     await browser.close();
+   })();
+   ```
+
+   → Bash: node /tmp/extract-bump.js [URL_CHECKOUT]
+   → Parsear o JSON retornado: network_bumps contem chamadas de API com dados de bump
+   → Buscar em html_snippet: elementos de order bump renderizados
+   → Extrair: nome, preco, descricao de cada bump encontrado
+
+   → Limpar apos uso: rm -f /tmp/extract-bump.js (ou del %TEMP%\extract-bump.js)
+
    PLATAFORMAS COM LIMITACAO CONHECIDA:
-   → Eduzz (sun.eduzz.com): SPA — HTML inicial e shell vazio. Metodos A-G provavelmente falham.
-     Tentar mesmo assim (G pode capturar configs parciais). Se falhar: registrar
-     "ORDER BUMP: nao extraivel via WebFetch (Eduzz SPA) — requer OBJ 7 Playwright"
+   → Eduzz (sun.eduzz.com): SPA — WebFetch retorna shell vazio. Metodos A-G falham.
+     Tentar I (Jina AI) primeiro. Se falhar, usar Metodo J.
    → Monetizze (app.monetizze.com.br): retorna 403 em WebFetch direto.
-     Tentar Metodo H (cache/busca externa). Se falhar: registrar
-     "ORDER BUMP: nao extraivel via WebFetch (Monetizze bloqueia) — requer OBJ 7 Playwright"
+     Tentar I.1 (Jina AI). Se falhar, usar Metodo J.
 
    REGISTRAR resultado como:
    → CONFIRMADO: bump extraido por qualquer metodo com nome + preco
    → PARCIAL: encontrou evidencia mas sem preco ou nome completo
-   → NAO ENCONTRADO: todos os 8 metodos testados, nenhum retornou dados de bump
-   → NAO EXTRAIVEL: plataforma bloqueia WebFetch (403/CSR) — indicar OBJ 7
+   → NAO ENCONTRADO: todos os 10 metodos testados, nenhum retornou dados de bump
+   → NAO EXTRAIVEL: Node.js nao disponivel no ambiente do usuario
 
 Escrever em: objetivo-4-funis/classificacao-[nome]-lote-[N].md
 Formato: | URL | Tipo | Headline | Preco | Order Bumps | Links para |
