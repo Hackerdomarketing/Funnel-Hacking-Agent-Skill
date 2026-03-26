@@ -815,6 +815,8 @@ Para CADA URL:
    WebFetch: https://r.jina.ai/[URL_CHECKOUT]
    O Jina renderiza JS e retorna o conteudo em texto limpo
    Buscar no retorno: "order bump", "adicionar", preco secundario
+   ✓ VALIDADO em producao: funcionou para checkouts Eduzz (SPA) — extraiu bumps
+     com nome, preco e CTA sem necessidade de Playwright ou API key
 
    I.2 — Google Cache (se indexado):
    WebFetch: https://webcache.googleusercontent.com/search?q=cache:[URL_CHECKOUT]
@@ -881,9 +883,12 @@ Para CADA URL:
 
    PLATAFORMAS COM LIMITACAO CONHECIDA:
    → Eduzz (sun.eduzz.com): SPA — WebFetch retorna shell vazio. Metodos A-G falham.
-     Tentar I (Jina AI) primeiro. Se falhar, usar Metodo J.
-   → Monetizze (app.monetizze.com.br): retorna 403 em WebFetch direto.
-     Tentar I.1 (Jina AI). Se falhar, usar Metodo J.
+     PULAR direto para Metodo I.1 (Jina AI) — CONFIRMADO que funciona para Eduzz.
+     Jina AI renderiza o JS do checkout e expoe order bumps completos (nome + preco + CTA).
+     Se Jina falhar, usar Metodo J (Playwright).
+   → Monetizze (app.monetizze.com.br): retorna 403 em WebFetch direto. Metodos A-G falham.
+     Tentar Metodo I.1 (Jina AI) — pode funcionar mesmo com 403 no WebFetch direto.
+     Se Jina falhar, usar Metodo J (Playwright).
 
    REGISTRAR resultado como:
    → CONFIRMADO: bump extraido por qualquer metodo com nome + preco
