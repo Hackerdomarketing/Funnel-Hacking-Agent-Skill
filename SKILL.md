@@ -741,9 +741,53 @@ Para CADA URL:
 3. Extrair: titulo/headline, preco (se visivel), links internos, formularios
 4. Se pagina JS-heavy: extrair de meta tags, og: tags, script tags
 5. Se pagina protegida: registrar como "PROTEGIDO - [tipo de plataforma]"
+6. SE tipo == CK (Checkout): executar EXTRACAO DE ORDER BUMPS via WebFetch:
+
+   HOTMART (URL contem pay.hotmart.com/{ID}):
+   → WebFetch: https://pay.hotmart.com/{ID}/_payload.json
+   → Buscar no JSON: bumps[], orderBump, order_bump
+   → Extrair por bump: nome, preco, descricao, CTA
+
+   KIWIFY (URL contem pay.kiwify.com.br/{CODE}):
+   → WebFetch na URL do checkout
+   → Buscar no HTML: window.__NUXT__ = {...}
+   → Parsear JSON; buscar: order_bump, bump, orderBump
+   → Extrair por bump: nome, preco, descricao, CTA
+
+   TICTO (URL contem pay.ticto.app ou checkout.ticto.app):
+   → WebFetch na URL do checkout
+   → Buscar: <script id="__NEXT_DATA__" type="application/json">
+   → Parsear JSON; buscar: offerData.builder.bumps[] ou orderBump
+   → Extrair por bump: name, price, description, cta_text
+
+   CAKTO (URL contem pay.cakto.com.br/{CODE}):
+   → Extrair CODE da URL
+   → WebFetch: https://api.cakto.com.br/api/product/checkout/{CODE}/
+   → Buscar no JSON: product.bumps[] ou order_bumps[]
+   → Extrair por bump: name, price, description
+
+   EDUZZ (URL contem sun.eduzz.com/{ID}):
+   → WebFetch na URL
+   → Buscar "order_bump" ou "bump" em script tags com JSON embutido
+   → Se nao encontrar → registrar "ORDER BUMP: nao extraivel (Eduzz)"
+
+   BRAIP (URL contem ev.braip.com ou checkout.braip.com):
+   → WebFetch na URL
+   → Buscar variavel JS global: valor_order_bump = ...
+   → Buscar cards HTML com botao "Adicionar ao carrinho" distintos do produto principal
+   → Extrair: produto, valor, descricao de cada card
+
+   MONETIZZE (URL contem app.monetizze.com.br/checkout):
+   → WebFetch retorna 403 — plataforma bloqueia requisicoes diretas
+   → Registrar: "ORDER BUMP: nao extraivel (Monetizze — usar OBJ 7 Playwright)"
+
+   OUTRAS PLATAFORMAS:
+   → WebFetch na URL; buscar termos: "order_bump", "bump", "adicional", "add-on"
+   → Se JSON encontrado com esses campos → extrair
+   → Se nao → registrar "ORDER BUMP: nao encontrado"
 
 Escrever em: objetivo-4-funis/classificacao-[nome]-lote-[N].md
-Formato: | URL | Tipo | Headline | Preco | Links para |
+Formato: | URL | Tipo | Headline | Preco | Order Bumps | Links para |
 ```
 
 ### Etapa 3: Montagem do Mapa
@@ -758,7 +802,7 @@ ENTRADA (Anuncio/Link)
   → [LP] [headline] [URL] [CONFIRMADO]
      → [PV] [headline] [preco] [URL] [CONFIRMADO]
         → [CK] [plataforma] [URL] [CONFIRMADO]
-           → [OB] [oferta] [preco] [INFERIDO]
+           → [OB] [nome] R$[preco] [CONFIRMADO/INFERIDO/NAO EXTRAIVEL]
            → [UP1] [oferta] [preco] [URL] [CONFIRMADO/INFERIDO]
               → SE aceita → [UP2]
               → SE recusa → [DS] [preco] [URL]
