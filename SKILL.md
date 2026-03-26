@@ -741,50 +741,83 @@ Para CADA URL:
 3. Extrair: titulo/headline, preco (se visivel), links internos, formularios
 4. Se pagina JS-heavy: extrair de meta tags, og: tags, script tags
 5. Se pagina protegida: registrar como "PROTEGIDO - [tipo de plataforma]"
-6. SE tipo == CK (Checkout): executar EXTRACAO DE ORDER BUMPS via WebFetch:
+6. SE tipo == CK (Checkout): executar EXTRACAO DE ORDER BUMPS em CASCATA.
+   Detectar a plataforma pela URL e comecar pelo metodo mais provavel.
+   Se o metodo primario falhar (404, HTML vazio, campo ausente), testar TODOS os outros.
+   So marcar "nao encontrado" apos esgotar todos os metodos abaixo.
 
-   HOTMART (URL contem pay.hotmart.com/{ID}):
-   → WebFetch: https://pay.hotmart.com/{ID}/_payload.json
-   → Buscar no JSON: bumps[], orderBump, order_bump
+   METODOS DISPONIVEIS (testar em cascata ate um funcionar):
+
+   METODO A — Endpoint _payload.json (Nuxt.js SSR):
+   → Mais provavel em: Hotmart
+   → WebFetch: [URL_BASE_DO_CHECKOUT]/_payload.json
+   → Buscar no JSON: bumps[], orderBump, order_bump, bumpOffer
    → Extrair por bump: nome, preco, descricao, CTA
 
-   KIWIFY (URL contem pay.kiwify.com.br/{CODE}):
+   METODO B — window.__NUXT__ no HTML (Nuxt.js SSR):
+   → Mais provavel em: Kiwify
    → WebFetch na URL do checkout
    → Buscar no HTML: window.__NUXT__ = {...}
-   → Parsear JSON; buscar: order_bump, bump, orderBump
+   → Parsear JSON; buscar: order_bump, bump, orderBump, bumps[]
    → Extrair por bump: nome, preco, descricao, CTA
 
-   TICTO (URL contem pay.ticto.app ou checkout.ticto.app):
+   METODO C — __NEXT_DATA__ no HTML (Next.js SSR):
+   → Mais provavel em: Ticto
    → WebFetch na URL do checkout
    → Buscar: <script id="__NEXT_DATA__" type="application/json">
-   → Parsear JSON; buscar: offerData.builder.bumps[] ou orderBump
+   → Parsear JSON; buscar: offerData.builder.bumps[], orderBump, bumps
    → Extrair por bump: name, price, description, cta_text
 
-   CAKTO (URL contem pay.cakto.com.br/{CODE}):
-   → Extrair CODE da URL
-   → WebFetch: https://api.cakto.com.br/api/product/checkout/{CODE}/
-   → Buscar no JSON: product.bumps[] ou order_bumps[]
+   METODO D — API interna sem autenticacao:
+   → Mais provavel em: Cakto
+   → Extrair CODE/ID da URL do checkout
+   → Tentar: WebFetch https://api.cakto.com.br/api/product/checkout/{CODE}/
+   → Tentar: WebFetch https://api.[dominio].com.br/checkout/{CODE}
+   → Tentar: WebFetch https://[dominio]/api/checkout/{CODE}
+   → Buscar no JSON: product.bumps[], order_bumps[], bumps[]
    → Extrair por bump: name, price, description
 
-   EDUZZ (URL contem sun.eduzz.com/{ID}):
-   → WebFetch na URL
-   → Buscar "order_bump" ou "bump" em script tags com JSON embutido
-   → Se nao encontrar → registrar "ORDER BUMP: nao extraivel (Eduzz)"
+   METODO E — Variaveis JS globais no HTML:
+   → Mais provavel em: Braip
+   → WebFetch na URL do checkout
+   → Buscar no HTML: valor_order_bump, order_bump_price, bump_product, bump_name
+   → Buscar qualquer variavel JS global com "bump" no nome
+   → Extrair: nome, valor, descricao de cada variavel encontrada
 
-   BRAIP (URL contem ev.braip.com ou checkout.braip.com):
-   → WebFetch na URL
-   → Buscar variavel JS global: valor_order_bump = ...
-   → Buscar cards HTML com botao "Adicionar ao carrinho" distintos do produto principal
-   → Extrair: produto, valor, descricao de cada card
+   METODO F — Cards HTML de order bump:
+   → Funciona em qualquer plataforma com SSR
+   → WebFetch na URL do checkout
+   → Buscar elementos HTML com: classe "order-bump", "orderbump", "bump", "add-on"
+   → Buscar botoes com texto: "Adicionar ao carrinho", "Add to cart", "Quero adicionar"
+   → Buscar secoes com preco secundario diferente do produto principal
+   → Extrair: titulo, preco, descricao de cada card/secao encontrada
 
-   MONETIZZE (URL contem app.monetizze.com.br/checkout):
-   → WebFetch retorna 403 — plataforma bloqueia requisicoes diretas
-   → Registrar: "ORDER BUMP: nao extraivel (Monetizze — usar OBJ 7 Playwright)"
+   METODO G — Script tags com JSON embutido:
+   → Funciona em plataformas com dados pre-carregados em <script>
+   → WebFetch na URL do checkout
+   → Varrer todos os <script type="application/json"> e <script> com JSON inline
+   → Buscar nos JSONs: "order_bump", "orderbump", "bump", "adicional", "upsell_checkout"
+   → Extrair qualquer objeto que contenha nome + preco + tipo bump
 
-   OUTRAS PLATAFORMAS:
-   → WebFetch na URL; buscar termos: "order_bump", "bump", "adicional", "add-on"
-   → Se JSON encontrado com esses campos → extrair
-   → Se nao → registrar "ORDER BUMP: nao encontrado"
+   METODO H — Cache publico (fallback):
+   → Usar se todos os anteriores falharem
+   → WebSearch: cache:[URL_CHECKOUT] order bump
+   → WebSearch: "[nome_produto]" checkout "order bump" preco
+   → Buscar evidencias de order bump em prints, reviews ou descricoes externas
+
+   PLATAFORMAS COM LIMITACAO CONHECIDA:
+   → Eduzz (sun.eduzz.com): SPA — HTML inicial e shell vazio. Metodos A-G provavelmente falham.
+     Tentar mesmo assim (G pode capturar configs parciais). Se falhar: registrar
+     "ORDER BUMP: nao extraivel via WebFetch (Eduzz SPA) — requer OBJ 7 Playwright"
+   → Monetizze (app.monetizze.com.br): retorna 403 em WebFetch direto.
+     Tentar Metodo H (cache/busca externa). Se falhar: registrar
+     "ORDER BUMP: nao extraivel via WebFetch (Monetizze bloqueia) — requer OBJ 7 Playwright"
+
+   REGISTRAR resultado como:
+   → CONFIRMADO: bump extraido por qualquer metodo com nome + preco
+   → PARCIAL: encontrou evidencia mas sem preco ou nome completo
+   → NAO ENCONTRADO: todos os 8 metodos testados, nenhum retornou dados de bump
+   → NAO EXTRAIVEL: plataforma bloqueia WebFetch (403/CSR) — indicar OBJ 7
 
 Escrever em: objetivo-4-funis/classificacao-[nome]-lote-[N].md
 Formato: | URL | Tipo | Headline | Preco | Order Bumps | Links para |
