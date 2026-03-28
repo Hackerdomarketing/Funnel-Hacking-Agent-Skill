@@ -81,27 +81,35 @@ Perguntar ao usuario:
 - Ja tem lista de concorrentes? (para OBJ 3)
 
 ### Passo 2: Criar Estrutura de Pastas
+
+Cada alvo/concorrente pesquisado recebe sua PROPRIA subpasta dentro de funnel-hacking/.
+Normalizar o nome: letras minusculas, sem acentos, espacos viram hifens.
+Exemplos: "Talita Marques" → talita-marques | "Érico Rocha" → erico-rocha
+
 ```
 funnel-hacking/
-  _estado.md
-  _prompt-retomada.md
-  objetivo-1-concorrentes/
-    _concorrentes.md
-  objetivo-2-ofertas/
-    _ofertas.md
-  objetivo-3-escalados/
-    ranking.md
-    dossies/
-  objetivo-4-funis/
-  swipefile/
+  [nome-do-alvo]/          ← SEMPRE criar esta subpasta primeiro
+    _estado.md
+    _prompt-retomada.md
+    objetivo-1-concorrentes/
+      _concorrentes.md
+    objetivo-2-ofertas/
+      _ofertas.md
+    objetivo-3-escalados/
+      ranking.md
+      dossies/
+    objetivo-4-funis/
+    swipefile/
 ```
 
-Criar APENAS as pastas do objetivo solicitado.
+Criar APENAS as subpastas do objetivo solicitado dentro de [nome-do-alvo]/.
+NUNCA criar arquivos direto em funnel-hacking/ — sempre dentro da subpasta do alvo.
 
 ### Passo 3: Inicializar Estado
-Escrever em `_estado.md`:
+Escrever em `funnel-hacking/[nome-do-alvo]/_estado.md`:
 ```
 # Estado do Funnel Hacking
+Alvo: [nome do alvo]
 Nicho: [nicho]
 Keywords: [keywords]
 Produto/Problema: [produto]
